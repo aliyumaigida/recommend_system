@@ -1,18 +1,25 @@
-from streamlit_autorefresh import st_autorefresh
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 import requests
 import sqlite3
-
-# -----------------------------
-# TMDb API KEY
-# -----------------------------
-
 import os
+import pandas as pd
 
+from recommender import HybridRecommender
+from database import get_connection, create_tables
+
+# =============================
+# TMDB API KEY
+# =============================
 API_KEY = os.getenv("TMDB_API_KEY")
 
 if API_KEY is None:
     raise ValueError("TMDB_API_KEY is not set in environment variables")
+
+# =============================
+# INIT DATABASE
+# =============================
+create_tables()
 
 # =============================
 # CONFIG
@@ -25,6 +32,19 @@ st.set_page_config(
 
 st.title("🎬 AI Movie Recommendation System")
 st.write("Get personalized movie recommendations instantly.")
+
+# =============================
+# LOAD RECOMMENDER MODEL
+# =============================
+movie_matrix = pd.read_csv("movie_matrix.csv", index_col=0)
+ratings_count = pd.read_csv("ratings_count.csv", index_col=0)
+movies = pd.read_csv("movies.csv")
+
+recommender = HybridRecommender(
+    movie_matrix,
+    ratings_count,
+    movies
+)
 
 # =============================
 # AUTO REFRESH TRENDING
@@ -53,10 +73,24 @@ top_n = st.slider("Number of Recommendations", 1, 20, 10)
 tab1, tab2, tab3 = st.tabs(["🎬 Recommended", "🔥 Trending", "📜 History"])
 
 # =============================
+# SAVE HISTORY
+# =============================
+def save_history(username, movie):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT INTO history (username, movie) VALUES (?, ?)",
+        (username, movie)
+    )
+
+    conn.commit()
+    conn.close()
+
+# =============================
 # FETCH POSTER
 # =============================
 def fetch_poster(movie_name):
-
     clean_name = movie_name.split("(")[0].strip()
 
     url = (
@@ -83,7 +117,6 @@ def fetch_poster(movie_name):
 # FETCH TRAILER
 # =============================
 def fetch_trailer(movie_name):
-
     clean_name = movie_name.split("(")[0].strip()
 
     url = (
@@ -96,7 +129,6 @@ def fetch_trailer(movie_name):
         data = r.json()
 
         if data.get("results"):
-
             movie_id = data["results"][0]["id"]
 
             trailer_url = (
@@ -123,71 +155,80 @@ with tab1:
 
     if movie_name:
 
-        url = "http://127.0.0.1:8000/recommend"
-
-        params = {
-            "movie": movie_name,
-            "top_n": top_n,
-            "username": username
-        }
-
         with st.spinner("Finding best movies..."):
 
             try:
-                response = requests.get(url, params=params, timeout=10)
-                data = response.json()
+                data = recommender.recommend(movie_name, top_n)
 
-            except:
-                st.error("FastAPI server not running.")
-                st.stop()
+                if "error" in data:
+                    st.error(data["error"])
 
-        if "error" in data:
-            st.error(data["error"])
+                else:
+                    st.success(f"Recommendations for: {data['input_movie']}")
 
-        else:
-            st.success(f"Recommendations for: {data['input_movie']}")
+                    save_history(username, data["input_movie"])
 
-            cols = st.columns(5)
+                    cols = st.columns(5)
 
-            for idx, movie in enumerate(data["recommendations"]):
+                    for idx, movie in enumerate(data["recommendations"]):
 
-                with cols[idx % 5]:
+                        with cols[idx % 5]:
 
-                    poster = fetch_poster(movie["movie"])
+                            poster = fetch_poster(movie["movie"])
 
-                    if poster:
-                        st.image(poster, use_container_width=True)
-                    else:
-                        st.text("No poster")
+                            if poster:
+                                st.image(poster, use_container_width=True)
+                            else:
+                                st.text("No poster")
 
-                    if st.button(movie["movie"], key=f"rec_{idx}"):
+                            if st.button(movie["movie"], key=f"rec_{idx}"):
 
-                        st.session_state["selected_movie"] = movie["movie"]
-                        st.rerun()
+                                st.session_state["selected_movie"] = movie["movie"]
+                                st.rerun()
 
-                    st.metric("Score", round(movie["score"], 3))
-                    st.metric("Ratings", movie["ratings"])
+                            st.metric("Score", round(movie["score"], 3))
+                            st.metric("Ratings", movie["ratings"])
 
-                    trailer = fetch_trailer(movie["movie"])
+                            trailer = fetch_trailer(movie["movie"])
 
-                    if trailer:
-                        with st.expander("🎥 Trailer"):
-                            st.video(trailer)
+                            if trailer:
+                                with st.expander("🎥 Trailer"):
+                                    st.video(trailer)
+
+            except Exception as e:
+                st.error(f"Error: {e}")
 
 # =============================
-# TAB 2 - TRENDING (AUTO LIVE)
+# TAB 2 - TRENDING
 # =============================
 with tab2:
 
     st.subheader("🔥 Trending Movies (Live from TMDb)")
 
     try:
-        r = requests.get("http://127.0.0.1:8000/trending", timeout=10)
+        url = (
+            f"https://api.themoviedb.org/3/trending/movie/day"
+            f"?api_key={API_KEY}"
+        )
+
+        r = requests.get(url, timeout=10)
         data = r.json()
+
+        movies_data = []
+
+        for m in data.get("results", []):
+            movies_data.append({
+                "title": m.get("title"),
+                "rating": m.get("vote_average"),
+                "poster": (
+                    "https://image.tmdb.org/t/p/w500" + m["poster_path"]
+                    if m.get("poster_path") else None
+                )
+            })
 
         cols = st.columns(5)
 
-        for idx, movie in enumerate(data["results"]):
+        for idx, movie in enumerate(movies_data):
 
             with cols[idx % 5]:
 
@@ -208,7 +249,7 @@ with tab3:
     st.subheader("📜 Your Watch History")
 
     try:
-        conn = sqlite3.connect("users.db")
+        conn = get_connection()
         cursor = conn.cursor()
 
         cursor.execute(
