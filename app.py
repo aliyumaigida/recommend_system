@@ -54,10 +54,9 @@ if "user" not in st.session_state:
     st.session_state.user = None
 
 # =============================
-# LOGIN SYSTEM (SIDEBAR)
+# LOGIN SYSTEM
 # =============================
 st.sidebar.title("🔐 Account System")
-
 menu = st.sidebar.radio("Menu", ["Login", "Register"])
 
 # ---------------- REGISTER ----------------
@@ -91,32 +90,25 @@ if menu == "Login":
     password = st.text_input("Password", type="password").strip()
 
     if st.button("Login"):
-    
+
         conn = get_connection()
         cursor = conn.cursor()
-    
+
         cursor.execute(
             "SELECT password FROM users WHERE username=?",
             (username,)
         )
-    
+
         result = cursor.fetchone()
-    
-        # 🔍 DEBUG LINES (TEMPORARY)
-        st.write("DEBUG username:", username)
-        st.write("DEBUG input hash:", hash_password(password))
-        st.write("DEBUG DB result:", result)
-    
         conn.close()
-    
+
         if result and result[0] == hash_password(password):
-    
+
             st.session_state.user = username
             st.success(f"Welcome {username} 🎉")
-    
+
         else:
             st.error("Invalid credentials")
-
 
 # =============================
 # BLOCK IF NOT LOGGED IN
@@ -155,16 +147,57 @@ def save_history(username, movie):
 def fetch_poster(movie_name):
     clean_name = movie_name.split("(")[0].strip()
 
-    url = f"https://api.themoviedb.org/3/search/movie?api_key={API_KEY}&query={clean_name}"
+    url = (
+        f"https://api.themoviedb.org/3/search/movie"
+        f"?api_key={API_KEY}&query={clean_name}"
+    )
 
     try:
         r = requests.get(url, timeout=5)
         data = r.json()
 
         if data.get("results"):
-            poster = data["results"][0].get("poster_path")
-            if poster:
-                return "https://image.tmdb.org/t/p/w500" + poster
+            poster_path = data["results"][0].get("poster_path")
+
+            if poster_path:
+                return "https://image.tmdb.org/t/p/w500" + poster_path
+
+    except:
+        return None
+
+    return None
+
+# =============================
+# FETCH TRAILER (FIXED)
+# =============================
+def fetch_trailer(movie_name):
+
+    clean_name = movie_name.split("(")[0].strip()
+
+    url = (
+        f"https://api.themoviedb.org/3/search/movie"
+        f"?api_key={API_KEY}&query={clean_name}"
+    )
+
+    try:
+        r = requests.get(url, timeout=5)
+        data = r.json()
+
+        if data.get("results"):
+            movie_id = data["results"][0]["id"]
+
+            trailer_url = (
+                f"https://api.themoviedb.org/3/movie/"
+                f"{movie_id}/videos?api_key={API_KEY}"
+            )
+
+            tr = requests.get(trailer_url)
+            trailer_data = tr.json()
+
+            for v in trailer_data.get("results", []):
+                if v["type"] == "Trailer" and v["site"] == "YouTube":
+                    return "https://www.youtube.com/watch?v=" + v["key"]
+
     except:
         return None
 
@@ -198,6 +231,11 @@ with tab1:
                     poster = fetch_poster(movie["movie"])
                     if poster:
                         st.image(poster)
+
+                    trailer = fetch_trailer(movie["movie"])
+                    if trailer:
+                        with st.expander("🎥 Trailer"):
+                            st.video(trailer)
 
 # =============================
 # TRENDING
