@@ -1,8 +1,8 @@
 streamlit
+streamlit-autorefresh
 pandas
 numpy
-scikit-learn
 requests
+scikit-learn
 fuzzywuzzy
 python-Levenshtein
-python-dotenv
