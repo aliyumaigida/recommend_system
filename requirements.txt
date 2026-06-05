@@ -1,10 +1,8 @@
+streamlit
 pandas
 numpy
 scikit-learn
-scipy
 requests
-streamlit
-streamlit-autorefresh
 fuzzywuzzy
 python-Levenshtein
-python-multipart
+python-dotenv
