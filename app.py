@@ -93,25 +93,32 @@ if menu == "Login":
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-
+    
         conn = get_connection()
         cursor = conn.cursor()
-
+    
         cursor.execute(
             "SELECT password FROM users WHERE username=?",
             (username,)
         )
-
+    
         result = cursor.fetchone()
+    
+        # 🔍 DEBUG LINES (TEMPORARY)
+        st.write("DEBUG username:", username)
+        st.write("DEBUG input hash:", hash_password(password))
+        st.write("DEBUG DB result:", result)
+    
         conn.close()
-
+    
         if result and result[0] == hash_password(password):
-
+    
             st.session_state.user = username
             st.success(f"Welcome {username} 🎉")
-
+    
         else:
             st.error("Invalid credentials")
+
 
 # =============================
 # BLOCK IF NOT LOGGED IN
