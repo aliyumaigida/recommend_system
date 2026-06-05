@@ -224,13 +224,13 @@ with tab1:
             for i, movie in enumerate(data["recommendations"]):
 
                 with cols[i % 5]:
-                    st.write(movie["movie"])
-                    st.metric("Score", movie["score"])
-                    st.metric("Ratings", movie["ratings"])
 
                     poster = fetch_poster(movie["movie"])
                     if poster:
                         st.image(poster)
+                    st.write(movie["movie"])
+                    st.metric("Score", movie["score"])
+                    st.metric("Ratings", movie["ratings"])
 
                     trailer = fetch_trailer(movie["movie"])
                     if trailer:
