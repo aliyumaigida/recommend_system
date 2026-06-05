@@ -65,8 +65,8 @@ menu = st.sidebar.radio("Menu", ["Login", "Register"])
 # ---------------- REGISTER ----------------
 if menu == "Register":
 
-    username = st.text_input("Username").strip()
-    password = st.text_input("Password", type="password").strip()
+    username = st.text_input("Username").lower().strip()
+    password = st.text_input("Password", type="password").lower().strip()
 
     if st.button("Register"):
 
