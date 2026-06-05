@@ -57,7 +57,7 @@ if "selected_movie" not in st.session_state:
     st.session_state.selected_movie = "Star Wars"
 
 # =============================
-# CLICK FUNCTION (IMPORTANT)
+# CLICK FUNCTION
 # =============================
 def select_movie(movie):
     st.session_state.selected_movie = movie
@@ -129,7 +129,7 @@ if st.session_state.user is None:
 username = st.session_state.user
 
 # =============================
-# INPUTS
+# INPUT (AUTO REACTIVE)
 # =============================
 movie_name = st.text_input(
     "Enter Movie Name",
@@ -175,7 +175,6 @@ def fetch_poster(movie_name):
 
             if poster_path:
                 return "https://image.tmdb.org/t/p/w500" + poster_path
-
     except:
         return None
 
@@ -218,11 +217,11 @@ def fetch_trailer(movie_name):
     return None
 
 # =============================
-# TAB 1 - RECOMMENDED
+# TAB 1 - AUTO RECOMMEND (FIXED)
 # =============================
 with tab1:
 
-    if st.button("Get Recommendations"):
+    if movie_name:
 
         data = recommender.recommend(movie_name, top_n)
 
@@ -243,7 +242,7 @@ with tab1:
                     if poster:
                         st.image(poster)
 
-                    # 🔥 CLICK TO RECOMMEND (FIXED FEATURE)
+                    # CLICK → INSTANT RECOMMEND
                     if st.button(movie["movie"], key=f"{movie['movie']}_{i}"):
                         select_movie(movie["movie"])
 
