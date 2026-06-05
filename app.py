@@ -209,46 +209,47 @@ def fetch_trailer(movie_name):
     return None
 
 # =============================
-# TAB 1 - RECOMMEND
+# TAB 1 - AUTO RECOMMEND FIXED
 # =============================
 with tab1:
 
-    if st.button("Get Recommendations"):
+    # if user clicked a movie → auto recommend immediately
+    if st.session_state.selected_movie:
 
-        data = recommender.recommend(movie_name, top_n)
+        movie_name = st.session_state.selected_movie
 
-        if "error" in data:
-            st.error(data["error"])
-        else:
-            st.success(f"Results for: {data['input_movie']}")
+        with st.spinner("Finding recommendations..."):
 
-            save_history(username, data["input_movie"])
+            data = recommender.recommend(movie_name, top_n)
 
-            cols = st.columns(5)
+            if "error" in data:
+                st.error(data["error"])
+            else:
+                st.success(f"Results for: {data['input_movie']}")
 
-            for i, movie in enumerate(data["recommendations"]):
+                save_history(username, data["input_movie"])
 
-                with cols[i % 5]:
+                cols = st.columns(5)
 
-                    # CLICK MOVIE → NEW SEARCH (FIXED)
-                    st.button(
-                        movie["movie"],
-                        key=f"movie_{i}",
-                        on_click=select_movie,
-                        args=(movie["movie"],)
-                    )
+                for i, movie in enumerate(data["recommendations"]):
 
-                    poster = fetch_poster(movie["movie"])
-                    if poster:
-                        st.image(poster)
+                    with cols[i % 5]:
 
-                    st.metric("Score", movie["score"])
-                    st.metric("Ratings", movie["ratings"])
+                        poster = fetch_poster(movie["movie"])
+                        if poster:
+                            st.image(poster)
 
-                    trailer = fetch_trailer(movie["movie"])
-                    if trailer:
-                        with st.expander("🎥 Trailer"):
-                            st.video(trailer)
+                        # CLICK → CHANGE MOVIE (AUTO TRIGGER)
+                        if st.button(movie["movie"], key=f"rec_{movie['movie']}_{i}"):
+                            select_movie(movie["movie"])
+
+                        st.metric("Score", movie["score"])
+                        st.metric("Ratings", movie["ratings"])
+
+                        trailer = fetch_trailer(movie["movie"])
+                        if trailer:
+                            with st.expander("🎥 Trailer"):
+                                st.video(trailer)
 
 # =============================
 # TAB 2 - TRENDING
