@@ -53,6 +53,16 @@ recommender = HybridRecommender(movie_matrix, ratings_count, movies)
 if "user" not in st.session_state:
     st.session_state.user = None
 
+if "selected_movie" not in st.session_state:
+    st.session_state.selected_movie = "Star Wars"
+
+# =============================
+# CLICK FUNCTION (IMPORTANT)
+# =============================
+def select_movie(movie):
+    st.session_state.selected_movie = movie
+    st.rerun()
+
 # =============================
 # LOGIN SYSTEM
 # =============================
@@ -121,7 +131,11 @@ username = st.session_state.user
 # =============================
 # INPUTS
 # =============================
-movie_name = st.text_input("Enter Movie Name", "Star Wars")
+movie_name = st.text_input(
+    "Enter Movie Name",
+    value=st.session_state.selected_movie
+)
+
 top_n = st.slider("Number of Recommendations", 1, 20, 10)
 
 tab1, tab2, tab3 = st.tabs(["🎬 Recommended", "🔥 Trending", "📜 History"])
@@ -168,7 +182,7 @@ def fetch_poster(movie_name):
     return None
 
 # =============================
-# FETCH TRAILER (FIXED)
+# FETCH TRAILER
 # =============================
 def fetch_trailer(movie_name):
 
@@ -204,7 +218,7 @@ def fetch_trailer(movie_name):
     return None
 
 # =============================
-# RECOMMENDATIONS
+# TAB 1 - RECOMMENDED
 # =============================
 with tab1:
 
@@ -215,7 +229,7 @@ with tab1:
         if "error" in data:
             st.error(data["error"])
         else:
-            st.success(f"Results for {data['input_movie']}")
+            st.success(f"Results for: {data['input_movie']}")
 
             save_history(username, data["input_movie"])
 
@@ -228,7 +242,11 @@ with tab1:
                     poster = fetch_poster(movie["movie"])
                     if poster:
                         st.image(poster)
-                    st.write(movie["movie"])
+
+                    # 🔥 CLICK TO RECOMMEND (FIXED FEATURE)
+                    if st.button(movie["movie"], key=f"{movie['movie']}_{i}"):
+                        select_movie(movie["movie"])
+
                     st.metric("Score", movie["score"])
                     st.metric("Ratings", movie["ratings"])
 
@@ -238,7 +256,7 @@ with tab1:
                             st.video(trailer)
 
 # =============================
-# TRENDING
+# TAB 2 - TRENDING
 # =============================
 with tab2:
 
@@ -259,7 +277,7 @@ with tab2:
             st.write("⭐", m.get("vote_average"))
 
 # =============================
-# HISTORY
+# TAB 3 - HISTORY
 # =============================
 with tab3:
 
