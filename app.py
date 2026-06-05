@@ -21,7 +21,7 @@ if not API_KEY:
 create_tables()
 
 # =============================
-# HASH PASSWORD
+# PASSWORD HASH
 # =============================
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -47,7 +47,7 @@ movies = pd.read_csv("movies.csv")
 recommender = HybridRecommender(movie_matrix, ratings_count, movies)
 
 # =============================
-# SESSION STATE
+# SESSION STATE INIT
 # =============================
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -55,32 +55,28 @@ if "user" not in st.session_state:
 if "selected_movie" not in st.session_state:
     st.session_state.selected_movie = "Star Wars"
 
+# IMPORTANT: protect session stability
+user_logged_in = st.session_state.user is not None
+
 # =============================
-# CLICK FUNCTION
+# SELECT MOVIE FUNCTION (NO RERUN BUG)
 # =============================
 def select_movie(movie):
     st.session_state.selected_movie = movie
-    st.rerun()
 
 # =============================
 # SIDEBAR
 # =============================
 st.sidebar.title("🔐 Account System")
 
-# =============================
-# LOGOUT (GLOBAL)
-# =============================
-if st.session_state.user:
-    st.sidebar.success(f"Logged in as {st.session_state.user}")
+if user_logged_in:
+    st.sidebar.success(f"👤 {st.session_state.user}")
 
     if st.sidebar.button("🚪 Logout"):
         st.session_state.user = None
         st.session_state.selected_movie = "Star Wars"
         st.rerun()
 
-# =============================
-# LOGIN / REGISTER
-# =============================
 else:
     menu = st.sidebar.radio("Menu", ["Login", "Register"])
 
@@ -100,7 +96,6 @@ else:
                 )
                 conn.commit()
                 st.success("Account created successfully!")
-
             except Exception as e:
                 st.error(f"Error: {e}")
 
@@ -151,7 +146,7 @@ top_n = st.slider("Number of Recommendations", 1, 20, 10)
 tab1, tab2, tab3 = st.tabs(["🎬 Recommended", "🔥 Trending", "📜 History"])
 
 # =============================
-# HISTORY SAVE
+# SAVE HISTORY
 # =============================
 def save_history(username, movie):
     conn = get_connection()
@@ -208,7 +203,6 @@ def fetch_trailer(movie_name):
             for v in tdata.get("results", []):
                 if v["type"] == "Trailer" and v["site"] == "YouTube":
                     return "https://www.youtube.com/watch?v=" + v["key"]
-
     except:
         return None
 
@@ -236,8 +230,13 @@ with tab1:
 
                 with cols[i % 5]:
 
-                    if st.button(movie["movie"], key=f"movie_{i}", on_click=select_movie, args=(movie["movie"],)):
-                        pass
+                    # CLICK MOVIE → NEW SEARCH (FIXED)
+                    st.button(
+                        movie["movie"],
+                        key=f"movie_{i}",
+                        on_click=select_movie,
+                        args=(movie["movie"],)
+                    )
 
                     poster = fetch_poster(movie["movie"])
                     if poster:
