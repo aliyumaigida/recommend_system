@@ -7,7 +7,10 @@ import hashlib
 
 from recommender import HybridRecommender
 from database import get_connection, create_tables
+import os
 
+if os.path.exists("users.db"):
+    os.remove("users.db")
 # =============================
 # TMDB API KEY
 # =============================
