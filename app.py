@@ -48,7 +48,7 @@ movies = pd.read_csv("movies.csv")
 recommender = HybridRecommender(movie_matrix, ratings_count, movies)
 
 # =============================
-# SESSION STATE INIT
+# SESSION STATE
 # =============================
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -64,12 +64,24 @@ def select_movie(movie):
     st.rerun()
 
 # =============================
-# LOGIN SYSTEM
+# SIDEBAR (LOGIN + LOGOUT)
 # =============================
 st.sidebar.title("🔐 Account System")
 menu = st.sidebar.radio("Menu", ["Login", "Register"])
 
-# ---------------- REGISTER ----------------
+# 🔥 LOGOUT BUTTON
+if st.session_state.user:
+    st.sidebar.markdown("---")
+    st.sidebar.write(f"👤 Logged in as: {st.session_state.user}")
+
+    if st.sidebar.button("🚪 Logout"):
+        st.session_state.user = None
+        st.session_state.selected_movie = "Star Wars"
+        st.rerun()
+
+# =============================
+# REGISTER
+# =============================
 if menu == "Register":
 
     new_user = st.text_input("Username").lower().strip()
@@ -93,7 +105,9 @@ if menu == "Register":
 
         conn.close()
 
-# ---------------- LOGIN ----------------
+# =============================
+# LOGIN
+# =============================
 if menu == "Login":
 
     username = st.text_input("Username").lower().strip()
@@ -113,10 +127,8 @@ if menu == "Login":
         conn.close()
 
         if result and result[0] == hash_password(password):
-
             st.session_state.user = username
             st.success(f"Welcome {username} 🎉")
-
         else:
             st.error("Invalid credentials")
 
@@ -129,7 +141,7 @@ if st.session_state.user is None:
 username = st.session_state.user
 
 # =============================
-# INPUT (AUTO REACTIVE)
+# INPUT
 # =============================
 movie_name = st.text_input(
     "Enter Movie Name",
@@ -217,7 +229,7 @@ def fetch_trailer(movie_name):
     return None
 
 # =============================
-# TAB 1 - AUTO RECOMMEND (FIXED)
+# TAB 1 - AUTO RECOMMEND
 # =============================
 with tab1:
 
@@ -242,7 +254,7 @@ with tab1:
                     if poster:
                         st.image(poster)
 
-                    # CLICK → INSTANT RECOMMEND
+                    # CLICK → NEW RECOMMENDATION
                     if st.button(movie["movie"], key=f"{movie['movie']}_{i}"):
                         select_movie(movie["movie"])
 
