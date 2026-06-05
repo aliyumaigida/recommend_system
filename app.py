@@ -65,8 +65,8 @@ menu = st.sidebar.radio("Menu", ["Login", "Register"])
 # ---------------- REGISTER ----------------
 if menu == "Register":
 
-    username = st.text_input("Username").lower().strip()
-    password = st.text_input("Password", type="password").lower().strip()
+    new_user = st.text_input("Username").lower().strip()
+    new_pass = st.text_input("Password", type="password").strip()
 
     if st.button("Register"):
 
@@ -81,16 +81,16 @@ if menu == "Register":
             conn.commit()
             st.success("Account created successfully!")
 
-        except:
-            st.error("Username already exists")
+        except Exception as e:
+            st.error(f"Error: {e}")
 
         conn.close()
 
 # ---------------- LOGIN ----------------
 if menu == "Login":
 
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    username = st.text_input("Username").lower().strip()
+    password = st.text_input("Password", type="password").strip()
 
     if st.button("Login"):
     
