@@ -9,13 +9,16 @@ def create_tables():
     conn = get_connection()
     cursor = conn.cursor()
 
+    # USERS TABLE
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE
+        username TEXT UNIQUE,
+        password TEXT
     )
     """)
 
+    # HISTORY TABLE
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
