@@ -67,7 +67,75 @@ def select_movie(movie):
 # SIDEBAR (LOGIN + LOGOUT)
 # =============================
 st.sidebar.title("🔐 Account System")
-menu = st.sidebar.radio("Menu", ["Login", "Register"])
+
+# =============================
+# IF USER IS LOGGED IN → SHOW LOGOUT ONLY
+# =============================
+if st.session_state.user:
+
+    st.sidebar.success(f"👤 {st.session_state.user} logged in")
+
+    if st.sidebar.button("🚪 Logout"):
+        st.session_state.user = None
+        st.session_state.selected_movie = "Star Wars"
+        st.rerun()
+
+# =============================
+# IF NOT LOGGED IN → SHOW LOGIN/REGISTER
+# =============================
+else:
+
+    menu = st.sidebar.radio("Menu", ["Login", "Register"])
+
+    # ---------------- REGISTER ----------------
+    if menu == "Register":
+
+        new_user = st.text_input("Username").lower().strip()
+        new_pass = st.text_input("Password", type="password").strip()
+
+        if st.button("Register"):
+
+            conn = get_connection()
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute(
+                    "INSERT INTO users (username, password) VALUES (?, ?)",
+                    (new_user, hash_password(new_pass))
+                )
+                conn.commit()
+                st.success("Account created successfully!")
+
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+            conn.close()
+
+    # ---------------- LOGIN ----------------
+    if menu == "Login":
+
+        username = st.text_input("Username").lower().strip()
+        password = st.text_input("Password", type="password").strip()
+
+        if st.button("Login"):
+
+            conn = get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT password FROM users WHERE username=?",
+                (username,)
+            )
+
+            result = cursor.fetchone()
+            conn.close()
+
+            if result and result[0] == hash_password(password):
+                st.session_state.user = username
+                st.success(f"Welcome {username} 🎉")
+                st.rerun()
+            else:
+                st.error("Invalid credentials")
 
 # 🔥 LOGOUT BUTTON
 if st.session_state.user:
