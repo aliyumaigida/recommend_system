@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
 import requests
 import pandas as pd
 import os
@@ -22,7 +21,7 @@ if not API_KEY:
 create_tables()
 
 # =============================
-# PASSWORD HASHING
+# HASH PASSWORD
 # =============================
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -64,16 +63,15 @@ def select_movie(movie):
     st.rerun()
 
 # =============================
-# SIDEBAR (LOGIN + LOGOUT)
+# SIDEBAR
 # =============================
 st.sidebar.title("🔐 Account System")
 
 # =============================
-# IF USER IS LOGGED IN → SHOW LOGOUT ONLY
+# LOGOUT (GLOBAL)
 # =============================
 if st.session_state.user:
-
-    st.sidebar.success(f"👤 {st.session_state.user} logged in")
+    st.sidebar.success(f"Logged in as {st.session_state.user}")
 
     if st.sidebar.button("🚪 Logout"):
         st.session_state.user = None
@@ -81,20 +79,17 @@ if st.session_state.user:
         st.rerun()
 
 # =============================
-# IF NOT LOGGED IN → SHOW LOGIN/REGISTER
+# LOGIN / REGISTER
 # =============================
 else:
-
     menu = st.sidebar.radio("Menu", ["Login", "Register"])
 
     # ---------------- REGISTER ----------------
     if menu == "Register":
-
-        new_user = st.text_input("Username").lower().strip()
-        new_pass = st.text_input("Password", type="password").strip()
+        new_user = st.text_input("Username", key="reg_user").lower().strip()
+        new_pass = st.text_input("Password", type="password", key="reg_pass")
 
         if st.button("Register"):
-
             conn = get_connection()
             cursor = conn.cursor()
 
@@ -113,12 +108,10 @@ else:
 
     # ---------------- LOGIN ----------------
     if menu == "Login":
-
-        username = st.text_input("Username").lower().strip()
-        password = st.text_input("Password", type="password").strip()
+        username = st.text_input("Username", key="login_user").lower().strip()
+        password = st.text_input("Password", type="password", key="login_pass")
 
         if st.button("Login"):
-
             conn = get_connection()
             cursor = conn.cursor()
 
@@ -137,71 +130,8 @@ else:
             else:
                 st.error("Invalid credentials")
 
-# 🔥 LOGOUT BUTTON
-if st.session_state.user:
-    st.sidebar.markdown("---")
-    st.sidebar.write(f"👤 Logged in as: {st.session_state.user}")
-
-    if st.sidebar.button("🚪 Logout"):
-        st.session_state.user = None
-        st.session_state.selected_movie = "Star Wars"
-        st.rerun()
-
 # =============================
-# REGISTER
-# =============================
-if menu == "Register":
-
-    new_user = st.text_input("Username").lower().strip()
-    new_pass = st.text_input("Password", type="password").strip()
-
-    if st.button("Register"):
-
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        try:
-            cursor.execute(
-                "INSERT INTO users (username, password) VALUES (?, ?)",
-                (new_user, hash_password(new_pass))
-            )
-            conn.commit()
-            st.success("Account created successfully!")
-
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-        conn.close()
-
-# =============================
-# LOGIN
-# =============================
-if menu == "Login":
-
-    username = st.text_input("Username").lower().strip()
-    password = st.text_input("Password", type="password").strip()
-
-    if st.button("Login"):
-
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            "SELECT password FROM users WHERE username=?",
-            (username,)
-        )
-
-        result = cursor.fetchone()
-        conn.close()
-
-        if result and result[0] == hash_password(password):
-            st.session_state.user = username
-            st.success(f"Welcome {username} 🎉")
-        else:
-            st.error("Invalid credentials")
-
-# =============================
-# BLOCK IF NOT LOGGED IN
+# STOP IF NOT LOGGED IN
 # =============================
 if st.session_state.user is None:
     st.stop()
@@ -221,7 +151,7 @@ top_n = st.slider("Number of Recommendations", 1, 20, 10)
 tab1, tab2, tab3 = st.tabs(["🎬 Recommended", "🔥 Trending", "📜 History"])
 
 # =============================
-# SAVE HISTORY
+# HISTORY SAVE
 # =============================
 def save_history(username, movie):
     conn = get_connection()
@@ -236,41 +166,33 @@ def save_history(username, movie):
     conn.close()
 
 # =============================
-# FETCH POSTER
+# POSTER
 # =============================
 def fetch_poster(movie_name):
-    clean_name = movie_name.split("(")[0].strip()
+    clean = movie_name.split("(")[0].strip()
 
-    url = (
-        f"https://api.themoviedb.org/3/search/movie"
-        f"?api_key={API_KEY}&query={clean_name}"
-    )
+    url = f"https://api.themoviedb.org/3/search/movie?api_key={API_KEY}&query={clean}"
 
     try:
         r = requests.get(url, timeout=5)
         data = r.json()
 
         if data.get("results"):
-            poster_path = data["results"][0].get("poster_path")
-
-            if poster_path:
-                return "https://image.tmdb.org/t/p/w500" + poster_path
+            poster = data["results"][0].get("poster_path")
+            if poster:
+                return "https://image.tmdb.org/t/p/w500" + poster
     except:
         return None
 
     return None
 
 # =============================
-# FETCH TRAILER
+# TRAILER
 # =============================
 def fetch_trailer(movie_name):
+    clean = movie_name.split("(")[0].strip()
 
-    clean_name = movie_name.split("(")[0].strip()
-
-    url = (
-        f"https://api.themoviedb.org/3/search/movie"
-        f"?api_key={API_KEY}&query={clean_name}"
-    )
+    url = f"https://api.themoviedb.org/3/search/movie?api_key={API_KEY}&query={clean}"
 
     try:
         r = requests.get(url, timeout=5)
@@ -279,15 +201,11 @@ def fetch_trailer(movie_name):
         if data.get("results"):
             movie_id = data["results"][0]["id"]
 
-            trailer_url = (
-                f"https://api.themoviedb.org/3/movie/"
-                f"{movie_id}/videos?api_key={API_KEY}"
-            )
+            t_url = f"https://api.themoviedb.org/3/movie/{movie_id}/videos?api_key={API_KEY}"
+            tr = requests.get(t_url)
+            tdata = tr.json()
 
-            tr = requests.get(trailer_url)
-            trailer_data = tr.json()
-
-            for v in trailer_data.get("results", []):
+            for v in tdata.get("results", []):
                 if v["type"] == "Trailer" and v["site"] == "YouTube":
                     return "https://www.youtube.com/watch?v=" + v["key"]
 
@@ -297,11 +215,11 @@ def fetch_trailer(movie_name):
     return None
 
 # =============================
-# TAB 1 - AUTO RECOMMEND
+# TAB 1 - RECOMMEND
 # =============================
 with tab1:
 
-    if movie_name:
+    if st.button("Get Recommendations"):
 
         data = recommender.recommend(movie_name, top_n)
 
@@ -318,13 +236,12 @@ with tab1:
 
                 with cols[i % 5]:
 
+                    if st.button(movie["movie"], key=f"movie_{i}", on_click=select_movie, args=(movie["movie"],)):
+                        pass
+
                     poster = fetch_poster(movie["movie"])
                     if poster:
                         st.image(poster)
-
-                    # CLICK → NEW RECOMMENDATION
-                    if st.button(movie["movie"], key=f"{movie['movie']}_{i}"):
-                        select_movie(movie["movie"])
 
                     st.metric("Score", movie["score"])
                     st.metric("Ratings", movie["ratings"])
