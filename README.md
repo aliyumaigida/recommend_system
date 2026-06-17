@@ -1,13 +1,13 @@
-# 🎬 AI Movie Recommendation System
+# AI Movie Recommendation System
 
 An AI-powered Movie Recommendation System built with Python and Streamlit that provides personalized movie
 recommendations based on user preferences and rating patterns.
 
-## 🚀 Live Demo
+## Live Demo
 
 https://recommendsystem-nkjtydk663wd2uuvb6fzrn.streamlit.app/
 
-## 📌 Features
+## Features
 
 * Personalized movie recommendations
 * User registration and login system
@@ -19,7 +19,7 @@ https://recommendsystem-nkjtydk663wd2uuvb6fzrn.streamlit.app/
 * Interactive and responsive Streamlit interface
 * Cloud deployment
 
-## 🛠️ Technologies Used
+## Technologies Used
 
 * Python
 * Pandas
@@ -28,11 +28,11 @@ https://recommendsystem-nkjtydk663wd2uuvb6fzrn.streamlit.app/
 * Machine Learning
 * TMDB API
 
-## 🤖 Recommendation Technique
+## Recommendation Technique
 
 The recommendation engine uses collaborative filtering techniques to identify movies with similar user rating patterns and generate personalized recommendations.
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 ├── app.py
@@ -77,7 +77,7 @@ TMDB_API_KEY=your_api_key
 streamlit run app.py
 ```
 
-## 📈 Future Improvements
+##  Future Improvements
 
 * PostgreSQL database integration
 * Advanced recommendation algorithms (Cosine Similarity, SVD)
